@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 
 class CRBM:
     def __init__(self, n_visible, n_hidden, n_cond):
@@ -7,25 +8,22 @@ class CRBM:
         self.n_cond = n_cond
 
         # Initialize weights
-        self.W = np.random.normal(0, 0.01, size=(n_visible, n_hidden))
-        self.U = np.random.normal(0, 0.01, size=(n_cond, n_hidden))
-        self.V = np.random.normal(0, 0.01, size=(n_cond, n_visible))
+        self.W = np.random.normal(0, 0.001, size=(n_visible, n_hidden))
+        self.U = np.random.normal(0, 0.001, size=(n_cond,    n_hidden))
+        self.V = np.random.normal(0, 0.001, size=(n_cond,    n_visible))
 
         # Initialize biases
         self.b = np.zeros(n_visible)
         self.c = np.zeros(n_hidden)
 
-    @staticmethod
-    def sigmoid(x): return 1 / (1 + np.exp(-x))
-
     def sample_hidden(self, v, cond):
-        h_probs = self.sigmoid(np.dot(v, self.W) + np.dot(cond, self.U) + self.c)
+        h_probs = expit(np.dot(v, self.W) + np.dot(cond, self.U) + self.c)
         h_sample = np.random.binomial(1, h_probs)
         return h_sample, h_probs
 
     def sample_visible(self, h, cond):
         v_mean = np.dot(h, self.W.T) + np.dot(cond, self.V) + self.b
-        v_sample = v_mean + np.random.normal(0, 0.01, size=v_mean.shape)
+        v_sample = v_mean + np.random.normal(0, 0.001, size=v_mean.shape)
         return v_sample
 
     def contrastive_divergence(self, v_input, cond, k=1, lr=0.01):
@@ -82,8 +80,10 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     
     # Load and preprocess the dataset
-    data = np.random.randn(4, 1000)
-    data /= np.max(data)
+    # data = np.random.randn(4, 1000)
+    # data /= np.max(data)
+
+    data = np.sin(np.linspace(-np.pi, np.pi, 1000)).reshape(1, -1)
 
     test_visible = data[:, 500:]
     test_cond = data[:, :500]
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     crbm = CRBM(n_visible, n_hidden, n_cond)
 
     # Train the CRBM
-    n_epochs = 100
-    errors = crbm.train(test_visible, test_cond)
+    t = 1
+    errors = crbm.train(test_visible, test_cond, n_epochs=t)
 
     # Visualize reconstruction error over epochs
     plt.plot(errors)
@@ -109,6 +109,8 @@ if __name__ == "__main__":
 
     # Visualize original vs reconstructed for test samples
     v_reconstructed = crbm.reconstruct(test_visible, test_cond)
+
+    v_reconstructed /= np.max(v_reconstructed)
 
     plt.plot(test_visible[0, :], label="Original (First Feature)", c='r', alpha=0.7)
     plt.plot(v_reconstructed[0, :], label="Reconstructed (First Feature)",c='b', alpha=0.7)
