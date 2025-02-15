@@ -113,6 +113,14 @@ class CRBM:
         except FileNotFoundError:
             print(f"No saved weights found in '{directory}/'. Model initialized with random weights.")
 
+    def free_energy(self, v, cond):
+        """Compute the free energy of the given visible and conditional inputs."""
+        visible_term = -np.dot(v, self.b) - np.dot(cond, np.dot(self.V, v.T))
+        hidden_pre_activation = np.dot(v, self.W) + np.dot(cond, self.U) + self.c
+        hidden_term = -np.sum(np.log1p(np.exp(hidden_pre_activation)), axis=1)
+        free_energy = visible_term + hidden_term
+        return free_energy
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -144,6 +152,9 @@ if __name__ == "__main__":
     # Test reconstruction
     v_reconstructed = crbm.reconstruct(test_visible, test_cond)
 
+    free_energy_visible = crbm.free_energy(test_visible, test_cond)
+    free_energy_recon = crbm.free_energy(v_reconstructed, test_cond)
+    print(f"{(free_energy_visible - free_energy_recon).item()}")
     plt.plot(test_visible[0, :], label="Original (First Feature)", c='r', alpha=0.7)
     plt.plot(v_reconstructed[0, :], label="Reconstructed (First Feature)", c='b', alpha=0.7)
     plt.legend()
